@@ -23,6 +23,10 @@ npm run lint:fix    # Auto-fix issues
 
 Requires `GOVEE_API_KEY` env var. Get your key from the Govee Home app: Settings → About Us → Apply for API Key.
 
+Optional env vars:
+- `GOVEE_API_BACKEND` — Default backend: `v1` (default), `v2`, or `lan`
+- `GOVEE_LAN_ENABLED=true` — Enable the LAN backend (requires devices on the same network)
+
 ## Manual Testing
 
 Pipe JSON-RPC messages to stdin:
@@ -32,18 +36,23 @@ printf '{"jsonrpc":"2.0","id":1,"method":"initialize"}\n{"jsonrpc":"2.0","id":2,
 
 ## Architecture
 
-This is a **Model Context Protocol (MCP) server** that wraps the Govee REST API (v1). It communicates over **stdin/stdout using JSON-RPC 2.0** — there is no HTTP server or MCP SDK dependency.
+This is a **Model Context Protocol (MCP) server** that wraps the Govee API. It communicates over **stdin/stdout using JSON-RPC 2.0** — there is no HTTP server or MCP SDK dependency.
+
+**Multi-backend architecture:** Supports three backends — v1 (REST), v2 (REST, richer features), and LAN (UDP multicast, local network). An `ApiRouter` dispatches to the selected backend; all backends implement the shared `Api` interface.
 
 **Source files:**
-- `src/index.ts` — Entrypoint: I/O helpers (`send`, `reply`, `textReply`, `error`), request dispatch, readline listener
-- `src/handlers.ts` — `createHandlers(api: Api)` factory returning a handler map; uses `ok`/`fail` helpers for `ToolResult`, `parseDevice` to extract common device args, and `validateInt` for numeric parameter validation
+- `src/index.ts` — Entrypoint: I/O helpers (`send`, `reply`, `textReply`, `error`), env var parsing, request dispatch, readline listener
+- `src/handlers.ts` — `createHandlers(router: ApiRouter)` factory returning a handler map; uses `ok`/`fail` helpers for `ToolResult`, `parseDevice`/`parseBackend` to extract common args, and `validateInt` for numeric validation
 - `src/tools.ts` — Tool schema definitions (static JSON Schema data for MCP `tools/list`)
-- `src/api.ts` — `createApi()` factory wrapping Govee REST API calls (`listDevices`, `getDeviceState`, `controlDevice`)
-- `src/types.ts` — All type definitions: `Api`, `RequestId`, `ToolResult`, `ToolHandler`, Govee interfaces, MCP interfaces
+- `src/api.ts` — `createApiRouter()` factory that instantiates and routes between backends
+- `src/api-v1.ts` — `createV1Api()` wrapping Govee REST API v1 (`listDevices`, `getDeviceState`, `controlDevice`)
+- `src/api-v2.ts` — `createV2Api()` wrapping Govee REST API v2 (adds `listScenes`, `listDiyScenes`, `activateScene`)
+- `src/api-lan.ts` — `createLanApi()` wrapping Govee LAN API via UDP multicast (device discovery + control, no cloud dependency)
+- `src/types.ts` — All type definitions: `Api`, `ApiRouter`, `Backend`, `RequestId`, `ToolResult`, `ToolHandler`, Govee interfaces, MCP interfaces
 
 **Request flow:** stdin line → JSON parse → `handleRequest` dispatches by MCP method (`initialize`, `tools/list`, `tools/call`) → `handleToolCall` looks up handler in map → handler returns `ToolResult` → dispatch maps result to JSON-RPC response on stdout.
 
-**Tools exposed:** `list_devices`, `get_device_state`, `set_power`, `set_brightness`, `set_color`, `set_color_temperature`.
+**Tools exposed:** `list_devices`, `get_device_state`, `set_power`, `set_brightness`, `set_color`, `set_color_temperature`, `list_scenes` (v2 only), `list_diy_scenes` (v2 only), `activate_scene` (v2 only).
 
 **Device identification:** All device commands require both `device_id` (MAC address) and `model` string, obtained from `list_devices`.
 
