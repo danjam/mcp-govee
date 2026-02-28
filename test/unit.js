@@ -271,13 +271,15 @@ describe('list_diy_scenes', () => {
 });
 
 describe('activate_scene', () => {
-  let lastCapability;
+  let lastSceneType;
+  let lastSceneValue;
   const v2Api = {
     ...mockApi(),
     listScenes: async () => [{ name: 'Sunset', value: { id: 1, paramId: 100 } }],
     listDiyScenes: async () => [{ name: 'My DIY', value: 42 }],
-    activateScene: async (_d, _m, cap) => {
-      lastCapability = cap;
+    activateScene: async (_d, _m, sceneType, sceneValue) => {
+      lastSceneType = sceneType;
+      lastSceneValue = sceneValue;
       return {};
     },
   };
@@ -321,11 +323,8 @@ describe('activate_scene', () => {
       scene_type: 'light',
     });
     assert.equal(result.ok, true);
-    assert.deepEqual(lastCapability, {
-      type: 'devices.capabilities.dynamic_scene',
-      instance: 'lightScene',
-      value: { id: 1, paramId: 100 },
-    });
+    assert.equal(lastSceneType, 'light');
+    assert.deepEqual(lastSceneValue, { id: 1, paramId: 100 });
   });
 
   it('activates a diy scene', async () => {
@@ -336,11 +335,8 @@ describe('activate_scene', () => {
       scene_type: 'diy',
     });
     assert.equal(result.ok, true);
-    assert.deepEqual(lastCapability, {
-      type: 'devices.capabilities.dynamic_scene',
-      instance: 'diyScene',
-      value: 42,
-    });
+    assert.equal(lastSceneType, 'diy');
+    assert.equal(lastSceneValue, 42);
   });
 });
 

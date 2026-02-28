@@ -48,7 +48,7 @@ export interface Api {
   controlDevice(device: string, model: string, cmd: Record<string, unknown>): Promise<unknown>;
   listScenes?(device: string, model: string): Promise<GoveeScene[]>;
   listDiyScenes?(device: string, model: string): Promise<GoveeDiyScene[]>;
-  activateScene?(device: string, model: string, capability: Record<string, unknown>): Promise<unknown>;
+  activateScene?(device: string, model: string, sceneType: 'light' | 'diy', sceneValue: unknown): Promise<unknown>;
 }
 
 export interface ApiRouter {
