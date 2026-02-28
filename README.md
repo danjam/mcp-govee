@@ -4,6 +4,8 @@ A [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) server that l
 
 Works with Claude Desktop, Claude Code, or any MCP-compatible client.
 
+---
+
 ## Setup
 
 ### 1. Get a Govee API Key
@@ -56,6 +58,8 @@ Then point your MCP client at the local build:
 
 Replace `/path/to/mcp-govee` with the actual path where you cloned the project.
 
+---
+
 ## Backends
 
 The server supports three different ways to communicate with your Govee devices. By default it uses **v1**, which works for most people out of the box.
@@ -97,11 +101,15 @@ To enable the LAN backend, also set `GOVEE_LAN_ENABLED`:
 
 You can also override the backend on a per-command basis — every tool accepts an optional `backend` parameter (`v1`, `v2`, or `lan`). This lets you use v1 as your default while still accessing v2-only features like scenes when you need them. You don't need to set v2 as your default to use scenes — the server will automatically route scene commands to v2.
 
+---
+
 ## What You Can Do
 
 ### List Devices
 
 See all the Govee devices on your account, including their IDs, models, and what commands they support. This is the starting point — you'll need a device's ID and model for all other commands. Only devices added to your Govee Home app will appear, and not all devices support every command.
+
+Tool: `list_devices`
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -110,6 +118,8 @@ See all the Govee devices on your account, including their IDs, models, and what
 ### Get Device State
 
 Check the current state of a device: whether it's on or off, the brightness level, and the current color.
+
+Tool: `get_device_state`
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -120,6 +130,8 @@ Check the current state of a device: whether it's on or off, the brightness leve
 ### Set Power
 
 Turn a device on or off.
+
+Tool: `set_power`
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -132,6 +144,8 @@ Turn a device on or off.
 
 Adjust a device's brightness level.
 
+Tool: `set_brightness`
+
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `device_id` | Yes | The device ID |
@@ -142,6 +156,8 @@ Adjust a device's brightness level.
 ### Set Color
 
 Set a device to a specific color using RGB values.
+
+Tool: `set_color`
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -156,6 +172,8 @@ Set a device to a specific color using RGB values.
 
 Set a device to a warm or cool white using color temperature.
 
+Tool: `set_color_temperature`
+
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `device_id` | Yes | The device ID |
@@ -167,6 +185,8 @@ Set a device to a warm or cool white using color temperature.
 
 List the built-in light scenes available for a device (e.g. "Rainbow", "Candlelight", "Ocean"). Use this to see what scene names you can activate. **Requires the v2 backend.**
 
+Tool: `list_scenes`
+
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `device_id` | Yes | The device ID |
@@ -175,6 +195,8 @@ List the built-in light scenes available for a device (e.g. "Rainbow", "Candleli
 ### List DIY Scenes
 
 List the custom scenes you've created in the Govee Home app. **Requires the v2 backend.**
+
+Tool: `list_diy_scenes`
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -185,6 +207,8 @@ List the custom scenes you've created in the Govee Home app. **Requires the v2 b
 
 Activate a built-in or DIY scene by name. Use **list scenes** or **list DIY scenes** first to see available names. **Requires the v2 backend.**
 
+Tool: `activate_scene`
+
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `device_id` | Yes | The device ID |
@@ -192,6 +216,8 @@ Activate a built-in or DIY scene by name. Use **list scenes** or **list DIY scen
 | `scene_name` | Yes | The name of the scene to activate (exact match from the list) |
 | `scene_type` | Yes | `light` for built-in scenes, `diy` for your custom scenes |
 
+---
+
 ## License
 
-MIT
+[MIT](LICENSE)
