@@ -1,4 +1,10 @@
-import type { MCPToolDefinition } from './types.js';
+import { BACKENDS, type MCPToolDefinition } from './types.js';
+
+const backendProp = {
+  type: 'string',
+  enum: [...BACKENDS],
+  description: "API backend to use: 'v1' (default), 'v2', or 'lan'. Omit to use the server default.",
+};
 
 export const tools = [
   {
@@ -6,7 +12,9 @@ export const tools = [
     description: 'List all Govee devices on your account',
     inputSchema: {
       type: 'object',
-      properties: {},
+      properties: {
+        backend: backendProp,
+      },
     },
   },
   {
@@ -17,6 +25,7 @@ export const tools = [
       properties: {
         device_id: { type: 'string', description: 'The device MAC address / ID (from list_devices)' },
         model: { type: 'string', description: 'The device model (from list_devices)' },
+        backend: backendProp,
       },
       required: ['device_id', 'model'],
     },
@@ -30,6 +39,7 @@ export const tools = [
         device_id: { type: 'string', description: 'The device MAC address / ID' },
         model: { type: 'string', description: 'The device model' },
         state: { type: 'string', enum: ['on', 'off'], description: "Power state: 'on' or 'off'" },
+        backend: backendProp,
       },
       required: ['device_id', 'model', 'state'],
     },
@@ -43,6 +53,7 @@ export const tools = [
         device_id: { type: 'string', description: 'The device MAC address / ID' },
         model: { type: 'string', description: 'The device model' },
         brightness: { type: 'integer', minimum: 0, maximum: 100, description: 'Brightness level (0-100)' },
+        backend: backendProp,
       },
       required: ['device_id', 'model', 'brightness'],
     },
@@ -58,6 +69,7 @@ export const tools = [
         r: { type: 'integer', minimum: 0, maximum: 255, description: 'Red value (0-255)' },
         g: { type: 'integer', minimum: 0, maximum: 255, description: 'Green value (0-255)' },
         b: { type: 'integer', minimum: 0, maximum: 255, description: 'Blue value (0-255)' },
+        backend: backendProp,
       },
       required: ['device_id', 'model', 'r', 'g', 'b'],
     },
@@ -76,8 +88,51 @@ export const tools = [
           maximum: 9000,
           description: 'Color temperature in Kelvin (2000-9000)',
         },
+        backend: backendProp,
       },
       required: ['device_id', 'model', 'temperature'],
+    },
+  },
+  {
+    name: 'list_scenes',
+    description: 'List built-in dynamic light scenes available for a device (v2 backend only)',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        device_id: { type: 'string', description: 'The device MAC address / ID' },
+        model: { type: 'string', description: 'The device model' },
+      },
+      required: ['device_id', 'model'],
+    },
+  },
+  {
+    name: 'list_diy_scenes',
+    description: 'List user-created DIY scenes for a device (v2 backend only)',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        device_id: { type: 'string', description: 'The device MAC address / ID' },
+        model: { type: 'string', description: 'The device model' },
+      },
+      required: ['device_id', 'model'],
+    },
+  },
+  {
+    name: 'activate_scene',
+    description: 'Activate a built-in or DIY scene by name (v2 backend only)',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        device_id: { type: 'string', description: 'The device MAC address / ID' },
+        model: { type: 'string', description: 'The device model' },
+        scene_name: { type: 'string', description: 'The name of the scene to activate' },
+        scene_type: {
+          type: 'string',
+          enum: ['light', 'diy'],
+          description: "Scene type: 'light' for built-in scenes, 'diy' for user-created scenes",
+        },
+      },
+      required: ['device_id', 'model', 'scene_name', 'scene_type'],
     },
   },
 ] satisfies MCPToolDefinition[];

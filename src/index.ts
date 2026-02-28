@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 import { createInterface } from 'node:readline';
 
-import { createApi } from './api.js';
+import { createApiRouter } from './api.js';
 import { createHandlers } from './handlers.js';
 import { tools } from './tools.js';
-import type { MCPRequest, MCPResponse, RequestId } from './types.js';
+import { BACKENDS, isValidBackend, type MCPRequest, type MCPResponse, type RequestId } from './types.js';
 
 const apiKey = process.env.GOVEE_API_KEY;
 if (!apiKey) {
@@ -13,7 +13,15 @@ if (!apiKey) {
   process.exit(1);
 }
 
-const api = createApi(apiKey);
+const defaultBackend = process.env.GOVEE_API_BACKEND ?? 'v1';
+if (!isValidBackend(defaultBackend)) {
+  console.error(`Invalid GOVEE_API_BACKEND: '${defaultBackend}'. Must be ${BACKENDS.map((b) => `'${b}'`).join(', ')}.`);
+  process.exit(1);
+}
+
+const lanEnabled = process.env.GOVEE_LAN_ENABLED === 'true';
+
+const router = createApiRouter({ apiKey, defaultBackend, lanEnabled });
 
 function send(msg: MCPResponse): void {
   process.stdout.write(`${JSON.stringify(msg)}\n`);
@@ -31,7 +39,7 @@ function error(id: RequestId, code: number, message: string): void {
   send({ jsonrpc: '2.0', id, error: { code, message } });
 }
 
-const handlers = createHandlers(api);
+const handlers = createHandlers(router);
 
 async function handleToolCall(id: RequestId, name: string, args: Record<string, unknown>): Promise<void> {
   const handler = handlers[name];
