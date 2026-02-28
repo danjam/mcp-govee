@@ -42,7 +42,7 @@ This is a **Model Context Protocol (MCP) server** that wraps the Govee API. It c
 
 **Source files:**
 - `src/index.ts` — Entrypoint: I/O helpers (`send`, `reply`, `textReply`, `error`), env var parsing, request dispatch, readline listener
-- `src/handlers.ts` — `createHandlers(router: ApiRouter)` factory returning a handler map; uses `ok`/`fail` helpers for `ToolResult`, `parseDevice`/`parseBackend` to extract common args, and `validateInt` for numeric validation
+- `src/handlers.ts` — `createHandlers(router: ApiRouter)` factory returning a handler map; uses `ok`/`fail` helpers for `ToolResult`, `parseDeviceAndBackend` to extract device args and resolve the backend into a `DeviceContext`, and `validateInt` for numeric validation
 - `src/tools.ts` — Tool schema definitions (static JSON Schema data for MCP `tools/list`)
 - `src/api.ts` — `createApiRouter()` factory that instantiates and routes between backends
 - `src/api-v1.ts` — `createV1Api()` wrapping Govee REST API v1 (`listDevices`, `getDeviceState`, `controlDevice`)
