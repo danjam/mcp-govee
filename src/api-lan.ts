@@ -18,9 +18,13 @@ export interface LanSocketFactory {
   createSocket(type: 'udp4'): Socket;
 }
 
-const defaultSocketFactory: LanSocketFactory = {
-  createSocket: (type: 'udp4') => createSocket(type),
-};
+const defaultSocketFactory: LanSocketFactory = { createSocket };
+
+function closeSocket(sock: Socket): void {
+  try {
+    sock.close();
+  } catch {}
+}
 
 export function createLanApi(socketFactory: LanSocketFactory = defaultSocketFactory): Api {
   let cache: DeviceCache | undefined;
@@ -46,9 +50,7 @@ export function createLanApi(socketFactory: LanSocketFactory = defaultSocketFact
 
       function cleanup(): void {
         clearTimeout(timeout);
-        try {
-          listener.close();
-        } catch {}
+        closeSocket(listener);
       }
 
       listener.on('error', (err) => {
@@ -83,7 +85,7 @@ export function createLanApi(socketFactory: LanSocketFactory = defaultSocketFact
         const scanMsg = JSON.stringify({ msg: { cmd: 'scan', data: { account_topic: 'reserve' } } });
         const sender = socketFactory.createSocket('udp4');
         sender.send(scanMsg, SCAN_PORT, MULTICAST_ADDR, (err) => {
-          sender.close();
+          closeSocket(sender);
           if (err) {
             cleanup();
             reject(err);
@@ -127,9 +129,7 @@ export function createLanApi(socketFactory: LanSocketFactory = defaultSocketFact
 
       function cleanup(): void {
         clearTimeout(timeout);
-        try {
-          sock.close();
-        } catch {}
+        closeSocket(sock);
       }
 
       sock.on('error', (err) => {
@@ -199,11 +199,11 @@ export function createLanApi(socketFactory: LanSocketFactory = defaultSocketFact
     return new Promise<void>((resolve, reject) => {
       const sock = socketFactory.createSocket('udp4');
       sock.on('error', (err) => {
-        sock.close();
+        closeSocket(sock);
         reject(err);
       });
       sock.send(message, CONTROL_PORT, lanDevice.ip, (err) => {
-        sock.close();
+        closeSocket(sock);
         if (err) reject(err);
         else resolve();
       });

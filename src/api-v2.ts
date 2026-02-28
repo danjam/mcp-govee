@@ -2,6 +2,11 @@ import type { Api, GoveeDevice, GoveeDeviceState, GoveeDiyScene, GoveeScene } fr
 
 const GOVEE_V2_BASE = 'https://openapi.api.govee.com/router/api/v1';
 
+const CAP_ON_OFF = 'devices.capabilities.on_off';
+const CAP_RANGE = 'devices.capabilities.range';
+const CAP_COLOR = 'devices.capabilities.color_setting';
+const CAP_SCENE = 'devices.capabilities.dynamic_scene';
+
 export function createV2Api(apiKey: string): Api {
   async function request(path: string, method = 'GET', body?: unknown): Promise<unknown> {
     const headers: Record<string, string> = {
@@ -31,6 +36,12 @@ export function createV2Api(apiKey: string): Api {
     }) as Promise<Record<string, unknown>>;
   }
 
+  function requirePayload(data: Record<string, unknown>): Record<string, unknown> {
+    const payload = data?.payload as Record<string, unknown>;
+    if (!payload) throw new Error('Unexpected Govee v2 API response: missing payload');
+    return payload;
+  }
+
   async function listDevices(): Promise<GoveeDevice[]> {
     const data = (await request('/user/devices')) as Record<string, unknown>;
     const devices = (data?.data as unknown[]) ?? [];
@@ -50,31 +61,29 @@ export function createV2Api(apiKey: string): Api {
     const cmds: string[] = [];
     for (const cap of capabilities) {
       const c = cap as Record<string, unknown>;
-      if (c.type === 'devices.capabilities.on_off') cmds.push('turn');
-      if (c.type === 'devices.capabilities.range' && c.instance === 'brightness') cmds.push('brightness');
-      if (c.type === 'devices.capabilities.color_setting' && c.instance === 'colorRgb') cmds.push('color');
-      if (c.type === 'devices.capabilities.color_setting' && c.instance === 'colorTemperatureK') cmds.push('colorTem');
+      if (c.type === CAP_ON_OFF) cmds.push('turn');
+      if (c.type === CAP_RANGE && c.instance === 'brightness') cmds.push('brightness');
+      if (c.type === CAP_COLOR && c.instance === 'colorRgb') cmds.push('color');
+      if (c.type === CAP_COLOR && c.instance === 'colorTemperatureK') cmds.push('colorTem');
     }
     return cmds;
   }
 
   async function getDeviceState(device: string, model: string): Promise<GoveeDeviceState> {
     const data = await v2Post('/device/state', device, model);
-
-    const payload = data?.payload as Record<string, unknown>;
-    if (!payload) throw new Error('Unexpected Govee v2 API response: missing payload');
+    const payload = requirePayload(data);
 
     const capabilities = (payload.capabilities as Record<string, unknown>[]) ?? [];
     const properties: Record<string, unknown>[] = [];
     for (const cap of capabilities) {
-      if (cap.type === 'devices.capabilities.on_off') {
+      if (cap.type === CAP_ON_OFF) {
         properties.push({ powerState: cap.state === 1 ? 'on' : 'off' });
-      } else if (cap.type === 'devices.capabilities.range' && cap.instance === 'brightness') {
+      } else if (cap.type === CAP_RANGE && cap.instance === 'brightness') {
         properties.push({ brightness: cap.state });
-      } else if (cap.type === 'devices.capabilities.color_setting' && cap.instance === 'colorRgb') {
+      } else if (cap.type === CAP_COLOR && cap.instance === 'colorRgb') {
         const colorInt = cap.state as number;
         properties.push({ color: { r: (colorInt >> 16) & 0xff, g: (colorInt >> 8) & 0xff, b: colorInt & 0xff } });
-      } else if (cap.type === 'devices.capabilities.color_setting' && cap.instance === 'colorTemperatureK') {
+      } else if (cap.type === CAP_COLOR && cap.instance === 'colorTemperatureK') {
         properties.push({ colorTem: cap.state });
       }
     }
@@ -87,19 +96,15 @@ export function createV2Api(apiKey: string): Api {
     const value = cmd.value;
     switch (name) {
       case 'turn':
-        return { type: 'devices.capabilities.on_off', instance: 'powerSwitch', value: value === 'on' ? 1 : 0 };
+        return { type: CAP_ON_OFF, instance: 'powerSwitch', value: value === 'on' ? 1 : 0 };
       case 'brightness':
-        return { type: 'devices.capabilities.range', instance: 'brightness', value };
+        return { type: CAP_RANGE, instance: 'brightness', value };
       case 'color': {
         const c = value as { r: number; g: number; b: number };
-        return {
-          type: 'devices.capabilities.color_setting',
-          instance: 'colorRgb',
-          value: (c.r << 16) | (c.g << 8) | c.b,
-        };
+        return { type: CAP_COLOR, instance: 'colorRgb', value: (c.r << 16) | (c.g << 8) | c.b };
       }
       case 'colorTem':
-        return { type: 'devices.capabilities.color_setting', instance: 'colorTemperatureK', value };
+        return { type: CAP_COLOR, instance: 'colorTemperatureK', value };
       default:
         throw new Error(`Unknown command: ${name}`);
     }
@@ -117,12 +122,10 @@ export function createV2Api(apiKey: string): Api {
     model: string,
   ): Promise<Record<string, unknown>[]> {
     const data = await v2Post(path, device, model);
-
-    const payload = data?.payload as Record<string, unknown>;
-    if (!payload) throw new Error('Unexpected Govee v2 API response: missing payload');
+    const payload = requirePayload(data);
 
     const capabilities = (payload.capabilities as Record<string, unknown>[]) ?? [];
-    const cap = capabilities.find((c) => c.type === 'devices.capabilities.dynamic_scene' && c.instance === instance);
+    const cap = capabilities.find((c) => c.type === CAP_SCENE && c.instance === instance);
     if (!cap) return [];
 
     const parameters = cap.parameters as Record<string, unknown>;
@@ -145,7 +148,17 @@ export function createV2Api(apiKey: string): Api {
     }));
   }
 
-  async function activateScene(device: string, model: string, capability: Record<string, unknown>): Promise<unknown> {
+  async function activateScene(
+    device: string,
+    model: string,
+    sceneType: 'light' | 'diy',
+    sceneValue: unknown,
+  ): Promise<unknown> {
+    const capability = {
+      type: CAP_SCENE,
+      instance: sceneType === 'diy' ? 'diyScene' : 'lightScene',
+      value: sceneValue,
+    };
     return v2Post('/device/control', device, model, { capability });
   }
 
