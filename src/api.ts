@@ -1,44 +1,30 @@
-import type { Api, GoveeDevice, GoveeDeviceState } from './types.js';
+import { createLanApi } from './api-lan.js';
+import { createV1Api } from './api-v1.js';
+import { createV2Api } from './api-v2.js';
+import type { Api, ApiRouter, Backend } from './types.js';
 
-const GOVEE_API_BASE = 'https://developer-api.govee.com/v1';
+export interface ApiRouterConfig {
+  apiKey: string;
+  defaultBackend?: Backend;
+  lanEnabled?: boolean;
+}
 
-export function createApi(apiKey: string): Api {
-  async function request(path: string, method = 'GET', body?: unknown): Promise<unknown> {
-    const headers: Record<string, string> = { 'Govee-API-Key': apiKey };
-    if (body) headers['Content-Type'] = 'application/json';
+export function createApiRouter(config: ApiRouterConfig): ApiRouter {
+  const defaultBackend = config.defaultBackend ?? 'v1';
+  const backends = new Map<Backend, Api>();
 
-    const res = await fetch(`${GOVEE_API_BASE}${path}`, {
-      method,
-      headers,
-      body: body ? JSON.stringify(body) : undefined,
-    });
-
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`Govee API error (${res.status}): ${text}`);
-    }
-
-    return res.json();
+  backends.set('v1', createV1Api(config.apiKey));
+  backends.set('v2', createV2Api(config.apiKey));
+  if (config.lanEnabled) {
+    backends.set('lan', createLanApi());
   }
 
-  async function listDevices(): Promise<GoveeDevice[]> {
-    const data = (await request('/devices')) as Record<string, unknown>;
-    const devices = (data?.data as Record<string, unknown>)?.devices;
-    if (!Array.isArray(devices)) throw new Error('Unexpected Govee API response: missing devices array');
-    return devices as GoveeDevice[];
+  function get(backend?: Backend): Api {
+    const key = backend ?? defaultBackend;
+    const api = backends.get(key);
+    if (!api) throw new Error(`Backend '${key}' is not enabled`);
+    return api;
   }
 
-  async function getDeviceState(device: string, model: string): Promise<GoveeDeviceState> {
-    const params = new URLSearchParams({ device, model });
-    const data = (await request(`/devices/state?${params}`)) as Record<string, unknown>;
-    if (!data?.data || typeof data.data !== 'object')
-      throw new Error('Unexpected Govee API response: missing state data');
-    return data.data as GoveeDeviceState;
-  }
-
-  async function controlDevice(device: string, model: string, cmd: Record<string, unknown>): Promise<unknown> {
-    return request('/devices/control', 'PUT', { device, model, cmd });
-  }
-
-  return { listDevices, getDeviceState, controlDevice };
+  return { get, defaultBackend };
 }
