@@ -77,6 +77,9 @@ function handleRequest(req: MCPRequest): void {
     case 'tools/call':
       void handleToolCall(id, req.params?.name as string, (req.params?.arguments ?? {}) as Record<string, unknown>);
       break;
+    case 'ping':
+      reply(id, {});
+      break;
     default:
       error(id, -32601, 'Method not found');
   }
