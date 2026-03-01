@@ -1,12 +1,24 @@
 # MCP Govee
 
-A [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) server that lets AI assistants control your Govee smart devices. Turn lights on and off, change colors, adjust brightness, activate scenes, and more — all through natural conversation.
+An [MCP](https://modelcontextprotocol.io/) server that lets AI assistants control your [Govee](https://www.govee.com/) smart devices. Turn lights on and off, change colors, adjust brightness, activate scenes, and more — all through natural conversation.
 
 Works with Claude Desktop, Claude Code, or any MCP-compatible client.
 
 ---
 
+## Use Cases
+
+- Ask your AI to set the mood with natural language — "make it feel cozy" or "I need bright light to focus"
+- Coordinate multiple devices with a single request — "turn everything off except the hallway"
+- Let your AI manage lighting as part of a larger workflow — "I'm starting a meeting, dim the office lights"
+- Use natural language to find and activate scenes without scrolling through the app
+- Have your AI check device states and troubleshoot connectivity across backends
+
+---
+
 ## Setup
+
+Requires [Node.js](https://nodejs.org/) 18+.
 
 ### 1. Get a Govee API Key
 
@@ -111,9 +123,9 @@ See all the Govee devices on your account, including their IDs, models, and what
 
 Tool: `list_devices`
 
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `backend` | No | Override the default backend (`v1`, `v2`, or `lan`) |
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `backend` | string | No | Override the default backend (`v1`, `v2`, or `lan`) |
 
 ### Get Device State
 
@@ -121,11 +133,11 @@ Check the current state of a device: whether it's on or off, the brightness leve
 
 Tool: `get_device_state`
 
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `device_id` | Yes | The device ID (from list devices) |
-| `model` | Yes | The device model (from list devices) |
-| `backend` | No | Override the default backend |
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `device_id` | string | Yes | The device ID (from list devices) |
+| `model` | string | Yes | The device model (from list devices) |
+| `backend` | string | No | Override the default backend |
 
 ### Set Power
 
@@ -133,12 +145,12 @@ Turn a device on or off.
 
 Tool: `set_power`
 
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `device_id` | Yes | The device ID |
-| `model` | Yes | The device model |
-| `state` | Yes | `on` or `off` |
-| `backend` | No | Override the default backend |
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `device_id` | string | Yes | The device ID |
+| `model` | string | Yes | The device model |
+| `state` | string | Yes | `on` or `off` |
+| `backend` | string | No | Override the default backend |
 
 ### Set Brightness
 
@@ -146,12 +158,12 @@ Adjust a device's brightness level.
 
 Tool: `set_brightness`
 
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `device_id` | Yes | The device ID |
-| `model` | Yes | The device model |
-| `brightness` | Yes | An integer from 0 to 100 |
-| `backend` | No | Override the default backend |
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `device_id` | string | Yes | The device ID |
+| `model` | string | Yes | The device model |
+| `brightness` | integer | Yes | Brightness level (0-100) |
+| `backend` | string | No | Override the default backend |
 
 ### Set Color
 
@@ -159,14 +171,14 @@ Set a device to a specific color using RGB values.
 
 Tool: `set_color`
 
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `device_id` | Yes | The device ID |
-| `model` | Yes | The device model |
-| `r` | Yes | Red, integer (0–255) |
-| `g` | Yes | Green, integer (0–255) |
-| `b` | Yes | Blue, integer (0–255) |
-| `backend` | No | Override the default backend |
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `device_id` | string | Yes | The device ID |
+| `model` | string | Yes | The device model |
+| `r` | integer | Yes | Red (0-255) |
+| `g` | integer | Yes | Green (0-255) |
+| `b` | integer | Yes | Blue (0-255) |
+| `backend` | string | No | Override the default backend |
 
 ### Set Color Temperature
 
@@ -174,12 +186,12 @@ Set a device to a warm or cool white using color temperature.
 
 Tool: `set_color_temperature`
 
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `device_id` | Yes | The device ID |
-| `model` | Yes | The device model |
-| `temperature` | Yes | Integer in Kelvin (2000 = warm, 9000 = cool daylight) |
-| `backend` | No | Override the default backend |
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `device_id` | string | Yes | The device ID |
+| `model` | string | Yes | The device model |
+| `temperature` | integer | Yes | Color temperature in Kelvin (2000-9000) |
+| `backend` | string | No | Override the default backend |
 
 ### List Scenes
 
@@ -187,10 +199,10 @@ List the built-in light scenes available for a device (e.g. "Rainbow", "Candleli
 
 Tool: `list_scenes`
 
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `device_id` | Yes | The device ID |
-| `model` | Yes | The device model |
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `device_id` | string | Yes | The device ID |
+| `model` | string | Yes | The device model |
 
 ### List DIY Scenes
 
@@ -198,10 +210,10 @@ List the custom scenes you've created in the Govee Home app. **Requires the v2 b
 
 Tool: `list_diy_scenes`
 
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `device_id` | Yes | The device ID |
-| `model` | Yes | The device model |
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `device_id` | string | Yes | The device ID |
+| `model` | string | Yes | The device model |
 
 ### Activate Scene
 
@@ -209,12 +221,12 @@ Activate a built-in or DIY scene by name. Use **list scenes** or **list DIY scen
 
 Tool: `activate_scene`
 
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `device_id` | Yes | The device ID |
-| `model` | Yes | The device model |
-| `scene_name` | Yes | The name of the scene to activate (exact match from the list) |
-| `scene_type` | Yes | `light` for built-in scenes, `diy` for your custom scenes |
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `device_id` | string | Yes | The device ID |
+| `model` | string | Yes | The device model |
+| `scene_name` | string | Yes | The name of the scene to activate (exact match from the list) |
+| `scene_type` | string | Yes | `light` for built-in scenes, `diy` for your custom scenes |
 
 ---
 
